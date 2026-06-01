@@ -26,9 +26,9 @@ Mỗi HV 1 repo GitHub cá nhân chứa toàn bộ portfolio Phase 2. Khác Phas
 
 | Ngày | Hoạt động |
 |---|---|
-| **T2 01/06 (hôm nay)** | Self-study Terraform phần 1 — IaC overview + HCL syntax |
-| **T3 02/06** | Self-study Terraform phần 2 — Workflow (Init/Plan/Apply/Destroy) + State Management + Modules + Best Practices |
-| **T4 03/06** | Sáng: Self-study K8s — đọc trước lấy kiến thức nền về Container/Orchestration (Pod, Service, probes, ConfigMap/Secret, NetworkPolicy). Cài sẵn **Docker Desktop + minikube + kubectl** trên laptop.<br>**🎙️ 15h–17h: LIVE Terraform với mentor Minh (online)**<br>**📝 17h–18h: Online Test 1** (60p, scope D1 Terraform) |
+| **T2 01/06 (hôm nay)** | Self-study Terraform phần 1 — IaC overview + HCL syntax + Workflow basics (Init/Plan/Apply/Destroy) |
+| **T3 02/06** | Self-study K8s — đọc trước lấy kiến thức nền về Container/Orchestration (Pod, Service, probes, ConfigMap/Secret, NetworkPolicy). Cài sẵn **Docker Desktop + minikube + kubectl** trên laptop. |
+| **T4 03/06** | Sáng: Self-study Terraform phần 2 — State Management (S3+DynamoDB lock) + Modules + Best Practices + ADR + chuẩn bị 2-3 câu hỏi cho Minh<br>**🎙️ 15h–17h: LIVE Terraform với mentor Minh (online)**<br>**📝 17h–18h: Online Test 1** (60p, scope D1 Terraform) |
 | **T5 04/06** | **Onsite Đà Nẵng với mentor Nghĩa — dạy K8s Container/Orchestration + scaling/networking/deploy trên minikube** + bắt đầu **Lab "Mini K8s platform trên minikube"** |
 | **T6 05/06** | Onsite — hoàn thiện Lab (minikube local) → show-and-tell pod 5 người 13h30–15h → **15h–16h: Online Test 2** (60p, scope K8s + Lab) |
 
