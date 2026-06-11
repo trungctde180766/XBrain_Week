@@ -22,27 +22,27 @@ Trong file `k8s-api/analysis-template.yaml`:
 ```yaml
   metrics:
   - name: success-rate
-    interval: 10s
-    count: 3
-    successCondition: result[0] >= 0.90
-    failureLimit: 1
-    provider:
-      prometheus:
-        address: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
-        query: |
-          sum(rate(flask_http_request_total{status!~"5.*", namespace="demo"}[1m])) 
-          / 
-          sum(rate(flask_http_request_total{namespace="demo"}[1m]))
+     interval: 10s
+     count: 10
+     successCondition: result[0] >= 0.90
+     failureLimit: 1
+     provider:
+       prometheus:
+         address: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+         query: |
+           sum(rate(flask_http_request_total{status!~"5.*", namespace="demo"}[30s])) 
+           / 
+           sum(rate(flask_http_request_total{namespace="demo"}[30s]))
 ```
 
 **Giải thích Query:**
-- `sum(rate(flask_http_request_total{status!~"5.*", namespace="demo"}[1m]))`: Tính tổng tốc độ request THÀNH CÔNG (các HTTP status KHÔNG bắt đầu bằng số 5 như 500, 502) trong 1 phút qua.
-- `sum(rate(flask_http_request_total{namespace="demo"}[1m]))`: Tính tổng tốc độ CỦA TẤT CẢ request trong 1 phút qua.
+- `sum(rate(flask_http_request_total{status!~"5.*", namespace="demo"}[30s]))`: Tính tổng tốc độ request THÀNH CÔNG trong 30 giây qua.
+- `sum(rate(flask_http_request_total{namespace="demo"}[30s]))`: Tính tổng tốc độ CỦA TẤT CẢ request trong 30 giây qua.
 - Phép chia này trả về **tỉ lệ thành công (Success Rate)** của API dưới dạng số thập phân từ 0 đến 1.
 
 **Giải thích Ngưỡng (Threshold):**
 - `successCondition: result[0] >= 0.90`: Yêu cầu tỉ lệ thành công tối thiểu phải đạt 90%. Nếu thấp hơn ngưỡng này, phân tích sẽ bị coi là failed.
-- `count: 3` & `interval: 10s`: Đánh giá sẽ được lặp lại 3 lần, mỗi lần cách nhau 10 giây.
+- `count: 10` & `interval: 10s`: Đánh giá sẽ được lặp lại 10 lần, mỗi lần cách nhau 10 giây (tổng thời gian đo lường tối đa 90 giây).
 - `failureLimit: 1`: Chỉ cần 1 lần thất bại (Success Rate < 90%), toàn bộ quá trình Rollout sẽ lập tức tự động Abort và đưa API trở về phiên bản cũ an toàn.
 
 ## SLO, Alerting & Email Notification (AlertmanagerConfig)
