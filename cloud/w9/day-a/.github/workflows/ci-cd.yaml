@@ -1,0 +1,28 @@
+name: GitOps CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  plan:
+    name: Plan changes
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      # Add your plan steps here (e.g. kustomize build, helm template, terraform plan)
+      - run: echo "Planning changes..."
+
+  apply:
+    name: Apply changes
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      # Add your apply steps here, or let ArgoCD handle it by just pushing manifests to the cluster
+      - run: echo "Applying changes or updating image tag for ArgoCD to sync..."
