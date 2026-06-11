@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>W9 GitOps Demo Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root{--bg:#050a14;--surface:#0d1a2d;--surface2:#112240;--border:#1e3a5f;--accent:#00d4ff;--purple:#7c3aed;--green:#00e676;--yellow:#ffd740;--red:#ff5252;--text:#e2e8f0;--muted:#64748b}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+    body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 20%,rgba(0,212,255,.07) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(124,58,237,.07) 0%,transparent 60%);pointer-events:none}
+
+    header{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1px solid var(--border);background:rgba(13,26,45,.9);position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--accent),var(--purple));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+    .brand h1{font-size:1.1rem;font-weight:700;background:linear-gradient(90deg,var(--accent),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .brand p{font-size:.72rem;color:var(--muted)}
+    .live{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--green)}
+    .live-dot{width:8px;height:8px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+    main{max-width:1400px;margin:0 auto;padding:24px 32px}
+
+    /* Objectives */
+    .objectives{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:24px}
+    .section-title{font-size:.8rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+    .obj-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+    .obj-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;transition:border-color .2s}
+    .obj-card:hover{border-color:var(--accent)}
+    .obj-num{width:28px;height:28px;background:linear-gradient(135deg,var(--accent),var(--purple));border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;margin-top:2px}
+    .obj-title{font-size:.88rem;font-weight:600;margin-bottom:4px}
+    .obj-desc{font-size:.75rem;color:var(--muted);line-height:1.5}
+    .obj-status{font-size:.65rem;padding:2px 8px;border-radius:10px;border:1px solid;margin-top:6px;display:inline-block}
+    .obj-status.done{color:var(--green);border-color:rgba(0,230,118,.3);background:rgba(0,230,118,.1)}
+
+    /* Demo Control */
+    .demo-panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:24px}
+    .btn-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px}
+    .demo-btn{border:none;border-radius:12px;padding:18px 20px;cursor:pointer;transition:all .2s;text-align:left;position:relative;overflow:hidden}
+    .demo-btn:active{transform:scale(.97)}
+    .demo-btn .btn-icon{font-size:1.6rem;margin-bottom:8px;display:block}
+    .demo-btn .btn-title{font-size:.9rem;font-weight:700;display:block;margin-bottom:4px}
+    .demo-btn .btn-desc{font-size:.72rem;opacity:.8;line-height:1.4}
+    .btn-red{background:linear-gradient(135deg,#7f1d1d,#991b1b);border:1px solid #ef4444;color:#fca5a5}
+    .btn-red:hover{background:linear-gradient(135deg,#991b1b,#b91c1c);box-shadow:0 0 20px rgba(239,68,68,.3)}
+    .btn-green{background:linear-gradient(135deg,#14532d,#166534);border:1px solid #22c55e;color:#86efac}
+    .btn-green:hover{background:linear-gradient(135deg,#166534,#15803d);box-shadow:0 0 20px rgba(34,197,94,.3)}
+    .btn-blue{background:linear-gradient(135deg,#0c4a6e,#0369a1);border:1px solid #0ea5e9;color:#7dd3fc}
+    .btn-blue:hover{background:linear-gradient(135deg,#0369a1,#0284c7);box-shadow:0 0 20px rgba(14,165,233,.3)}
+    .btn-purple{background:linear-gradient(135deg,#4c1d95,#5b21b6);border:1px solid #8b5cf6;color:#c4b5fd}
+    .btn-purple:hover{background:linear-gradient(135deg,#5b21b6,#6d28d9);box-shadow:0 0 20px rgba(139,92,246,.3)}
+
+    /* Status bar */
+    .status-bar{display:flex;gap:16px;flex-wrap:wrap;padding:14px 18px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);margin-bottom:20px}
+    .stat{display:flex;align-items:center;gap:8px}
+    .stat-label{font-size:.72rem;color:var(--muted)}
+    .stat-val{font-size:.9rem;font-weight:700;font-family:'JetBrains Mono'}
+    .stat-val.green{color:var(--green)}
+    .stat-val.yellow{color:var(--yellow)}
+    .stat-val.red{color:var(--red)}
+    .stat-val.blue{color:var(--accent)}
+
+    /* Config badge */
+    .config-strip{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+    .cfg{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 16px;font-family:'JetBrains Mono';font-size:.8rem}
+    .cfg span{color:var(--muted);margin-right:6px}
+    .cfg.v1 strong{color:var(--green)}
+    .cfg.v2 strong{color:var(--red)}
+    .cfg.err0 strong{color:var(--green)}
+    .cfg.err1 strong{color:var(--red)}
+
+    /* Two col layout */
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+    @media(max-width:900px){.two-col{grid-template-columns:1fr}}
+    .panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+    .panel-title{font-size:.85rem;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+
+    /* Event log */
+    .log-container{background:#020817;border:1px solid var(--border);border-radius:10px;padding:14px;height:320px;overflow-y:auto;font-family:'JetBrains Mono';font-size:.75rem}
+    .log-entry{padding:4px 0;border-bottom:1px solid rgba(30,58,95,.3);display:flex;gap:10px}
+    .log-entry:last-child{border-bottom:none}
+    .log-time{color:var(--muted);flex-shrink:0}
+    .log-msg.info{color:#93c5fd}
+    .log-msg.warn{color:var(--yellow)}
+    .log-msg.error{color:var(--red)}
+    .log-msg.success{color:var(--green)}
+
+    /* ArgoCD apps */
+    .app-row{display:flex;align-items:center;gap:10px;padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:8px;border:1px solid var(--border)}
+    .app-icon{font-size:1.2rem}
+    .app-name{flex:1;font-size:.85rem;font-weight:600}
+    .badge{font-size:.65rem;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase}
+    .badge.healthy,.badge.synced{background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.3)}
+    .badge.degraded,.badge.outofsync{background:rgba(255,82,82,.12);color:var(--red);border:1px solid rgba(255,82,82,.3)}
+    .badge.progressing{background:rgba(255,215,64,.12);color:var(--yellow);border:1px solid rgba(255,215,64,.3)}
+    .badge.unknown{background:rgba(100,116,139,.12);color:var(--muted);border:1px solid rgba(100,116,139,.3)}
+
+    /* Rollout */
+    .rollout-box{background:var(--surface2);border-radius:10px;padding:16px;border:1px solid var(--border)}
+    .rollout-phase{font-size:1.1rem;font-weight:700;margin-bottom:12px}
+    .progress-bar{background:var(--border);border-radius:4px;height:8px;overflow:hidden;margin-bottom:6px}
+    .progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),var(--accent));transition:width .6s ease}
+    .rollout-info{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted)}
+
+    /* Toast */
+    .toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--accent);border-radius:10px;padding:14px 20px;font-size:.85rem;transform:translateY(100px);opacity:0;transition:all .3s;z-index:999;max-width:320px}
+    .toast.show{transform:translateY(0);opacity:1}
+    .toast.warn{border-color:var(--yellow)}
+    .toast.error{border-color:var(--red)}
+
+    .loading{display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="brand-icon">⎈</div>
+    <div>
+      <h1>W9 GitOps Demo Panel</h1>
+      <p>Automated Canary Release · ArgoCD · Argo Rollouts · Prometheus</p>
+    </div>
+  </div>
+  <div class="live"><div class="live-dot"></div> LIVE · auto-refresh 5s</div>
+</header>
+
+<main>
+
+  <!-- OBJECTIVES -->
+  <div class="objectives">
+    <div class="section-title">🎯 Mục Tiêu Bài Tập W9 — Final Assignment</div>
+    <div class="obj-grid">
+      <div class="obj-card">
+        <div class="obj-num">1</div>
+        <div>
+          <div class="obj-title">GitOps với ArgoCD</div>
+          <div class="obj-desc">App-of-Apps pattern. ArgoCD tự động đọc Git và deploy toàn bộ hạ tầng. Không cần kubectl tay.</div>
+          <span class="obj-status done">✅ Hoàn thành</span>
+        </div>
+      </div>
+      <div class="obj-card">
+        <div class="obj-num">2</div>
+        <div>
+          <div class="obj-title">Canary Deployment</div>
+          <div class="obj-desc">Argo Rollouts deploy bản mới 25% → đánh giá → 100% hoặc Abort tự động.</div>
+          <span class="obj-status done">✅ Hoàn thành</span>
+        </div>
+      </div>
+      <div class="obj-card">
+        <div class="obj-num">3</div>
+        <div>
+          <div class="obj-title">Auto Rollback</div>
+          <div class="obj-desc">AnalysisTemplate kiểm tra Success Rate qua Prometheus. Nếu &lt;90% thì tự động ABORT và rollback về v1.</div>
+          <span class="obj-status done">✅ Hoàn thành</span>
+        </div>
+      </div>
+      <div class="obj-card">
+        <div class="obj-num">4</div>
+        <div>
+          <div class="obj-title">SLO Alert → Email</div>
+          <div class="obj-desc">PrometheusRule cảnh báo khi Error Rate >5%. Alertmanager gửi email tới thanhtrung8ctv@gmail.com.</div>
+          <span class="obj-status done">✅ Hoàn thành</span>
+        </div>
+      </div>
+      <div class="obj-card">
+        <div class="obj-num">5</div>
+        <div>
+          <div class="obj-title">CI/CD Validation</div>
+          <div class="obj-desc">GitHub Actions chạy Kubeconform tự động validate YAML manifest mỗi khi có Pull Request.</div>
+          <span class="obj-status done">✅ Hoàn thành</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEMO CONTROL -->
+  <div class="demo-panel">
+    <div class="section-title">🎮 Demo Controls — Bấm để Demo Trước Giám Khảo</div>
+
+    <!-- Config hiện tại -->
+    <div class="config-strip">
+      <div class="cfg" id="cfg-version"><span>VERSION:</span><strong id="cv">...</strong></div>
+      <div class="cfg" id="cfg-error"><span>ERROR_RATE:</span><strong id="ce">...</strong></div>
+      <div class="cfg"><span>Pods running:</span><strong id="cp" style="color:var(--green)">...</strong></div>
+      <div class="cfg"><span>Apps synced:</span><strong id="ca" style="color:var(--accent)">...</strong></div>
+    </div>
+
+    <div class="btn-grid">
+      <button class="demo-btn btn-red" onclick="demoAction('inject-error')">
+        <span class="btn-icon">💣</span>
+        <span class="btn-title">1. Inject Error (v2)</span>
+        <span class="btn-desc">Đẩy bản v2 bị lỗi 100% lên Git. Kích hoạt toàn bộ quy trình Canary → Abort → Alert.</span>
+      </button>
+      <button class="demo-btn btn-green" onclick="demoAction('fix')">
+        <span class="btn-icon">🛠️</span>
+        <span class="btn-title">2. Fix &amp; Restore (v1)</span>
+        <span class="btn-desc">Khôi phục về bản v1 khoẻ mạnh. ERROR_RATE = 0. Hệ thống tự heal.</span>
+      </button>
+      <button class="demo-btn btn-blue" onclick="openArgoCD()">
+        <span class="btn-icon">🔄</span>
+        <span class="btn-title">3. Mở ArgoCD UI</span>
+        <span class="btn-desc">Xem trực tiếp App-of-Apps tree, sync status và deployment graph.</span>
+      </button>
+      <button class="demo-btn btn-purple" onclick="explain()">
+        <span class="btn-icon">📖</span>
+        <span class="btn-title">4. Giải thích Luồng</span>
+        <span class="btn-desc">Log bước-by-bước toàn bộ quy trình GitOps đang diễn ra.</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- LIVE STATUS + LOG -->
+  <div class="two-col">
+    <!-- ArgoCD Apps -->
+    <div class="panel">
+      <div class="panel-title">🔄 ArgoCD Applications</div>
+      <div id="apps-list"><div style="color:var(--muted);font-size:.8rem"><span class="loading"></span> Đang tải...</div></div>
+
+      <div style="margin-top:16px">
+        <div class="panel-title">🚀 Argo Rollout — api</div>
+        <div class="rollout-box" id="rollout-box">
+          <div style="color:var(--muted);font-size:.8rem"><span class="loading"></span> Đang tải...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Event Log -->
+    <div class="panel">
+      <div class="panel-title">📋 Event Log — Real-time</div>
+      <div class="log-container" id="event-log">
+        <div class="log-entry"><span class="log-time">--:--:--</span><span class="log-msg info">Chờ sự kiện...</span></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:9999/api';
+
+function showToast(msg, type='info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(() => t.className = 'toast', 3500);
+}
+
+function badgeClass(val) {
+  val = (val||'').toLowerCase();
+  if (val.includes('healthy')) return 'healthy';
+  if (val === 'synced') return 'synced';
+  if (val.includes('out')) return 'outofsync';
+  if (val.includes('degraded')) return 'degraded';
+  if (val.includes('progress')) return 'progressing';
+  return 'unknown';
+}
+
+const appIcon = n => n==='root-app'?'🌳':n.includes('prometheus')?'📊':n.includes('rollout')?'🚀':n.includes('todo')?'📝':'⚙️';
+
+async function loadSummary() {
+  try {
+    const [s, cfg] = await Promise.all([
+      fetch(`${API}/summary`).then(r=>r.json()),
+      fetch(`${API}/current-config`).then(r=>r.json()),
+    ]);
+    document.getElementById('cp').textContent = `${s.pods_running}/${s.pods_total}`;
+    document.getElementById('ca').textContent = `${s.apps_synced}/${s.apps_total}`;
+    const cv = document.getElementById('cv');
+    cv.textContent = cfg.version;
+    cv.style.color = cfg.version === 'v2' ? 'var(--red)' : 'var(--green)';
+    const ce = document.getElementById('ce');
+    ce.textContent = cfg.error_rate;
+    ce.style.color = parseFloat(cfg.error_rate) > 0 ? 'var(--red)' : 'var(--green)';
+  } catch {}
+}
+
+async function loadApps() {
+  try {
+    const apps = await fetch(`${API}/apps`).then(r=>r.json());
+    document.getElementById('apps-list').innerHTML = apps.map(a=>`
+      <div class="app-row">
+        <span class="app-icon">${appIcon(a.name)}</span>
+        <span class="app-name">${a.name}</span>
+        <span class="badge ${badgeClass(a.health)}">${a.health}</span>
+        <span class="badge ${badgeClass(a.sync)}">${a.sync}</span>
+      </div>`).join('') || '<div style="color:var(--muted);font-size:.8rem">Không có app</div>';
+  } catch {}
+}
+
+async function loadRollout() {
+  try {
+    const r = await fetch(`${API}/rollout`).then(r=>r.json());
+    const pct = r.desired > 0 ? Math.round((r.ready/r.desired)*100) : 0;
+    const phaseColor = r.phase==='Healthy'?'var(--green)':r.phase==='Degraded'?'var(--red)':'var(--yellow)';
+    document.getElementById('rollout-box').innerHTML = `
+      <div class="rollout-phase" style="color:${phaseColor}">${r.phase === 'Healthy' ? '💚' : r.phase === 'Degraded' ? '🔴' : '🟡'} ${r.phase}</div>
+      <div class="rollout-info" style="margin-bottom:6px">
+        <span>Ready: <strong>${r.ready}/${r.desired}</strong></span>
+        <span>Image: <span style="font-family:'JetBrains Mono';color:var(--accent)">${(r.current_image||'').split(':').pop()}</span></span>
+        <span>${pct}%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>`;
+  } catch {}
+}
+
+async function loadEvents() {
+  try {
+    const events = await fetch(`${API}/events`).then(r=>r.json());
+    if (!events.length) return;
+    document.getElementById('event-log').innerHTML = events.map(e=>`
+      <div class="log-entry">
+        <span class="log-time">${e.time}</span>
+        <span class="log-msg ${e.level}">${e.msg}</span>
+      </div>`).join('');
+  } catch {}
+}
+
+async function demoAction(action) {
+  const msgs = {
+    'inject-error': '💣 Đang inject lỗi vào v2... Theo dõi Event Log!',
+    'fix': '🛠️ Đang khôi phục về v1...',
+  };
+  showToast(msgs[action] || '...', action==='inject-error'?'error':'');
+  try {
+    await fetch(`${API}/demo/${action}`, {method:'POST'});
+    loadAll();
+  } catch {
+    showToast('❌ Không kết nối được Dashboard API!', 'error');
+  }
+}
+
+function openArgoCD() {
+  window.open('https://localhost:8081', '_blank');
+  showToast('🔄 Đã mở ArgoCD UI trên tab mới!');
+}
+
+function explain() {
+  const steps = [
+    {t:'info', m:'📖 [LUỒNG GITOPS] Developer sửa code → git push lên GitHub'},
+    {t:'info', m:'🔄 ArgoCD phát hiện commit mới trong vòng 3 phút'},
+    {t:'info', m:'🚀 Argo Rollouts bắt đầu Canary: thả 25% traffic vào bản mới'},
+    {t:'warn', m:'📊 AnalysisTemplate hỏi Prometheus: "Success Rate của bản mới là bao nhiêu?"'},
+    {t:'warn', m:'⚖️ Prometheus trả lời: Nếu ≥90% → tiếp tục promote. Nếu <90% → ABORT!'},
+    {t:'error', m:'🛑 ABORT: Rollouts gỡ bản lỗi, traffic 100% về bản v1 cũ'},
+    {t:'error', m:'📧 Alertmanager bắn email cảnh báo tới thanhtrung8ctv@gmail.com'},
+    {t:'success', m:'✅ Hệ thống tự phục hồi, không cần con người can thiệp!'},
+  ];
+  steps.forEach((s, i) => {
+    setTimeout(() => {
+      fetch(`${API}/events`); // trigger refresh
+    }, i * 800);
+  });
+  // Ghi log giả vào server
+  fetch(`${API}/demo/explain`, {method:'POST'}).catch(()=>{});
+  showToast('📖 Đang giải thích quy trình... xem Event Log!');
+}
+
+function loadAll() {
+  loadSummary();
+  loadApps();
+  loadRollout();
+  loadEvents();
+}
+
+loadAll();
+setInterval(loadAll, 5000);
+</script>
+</body>
+</html>
