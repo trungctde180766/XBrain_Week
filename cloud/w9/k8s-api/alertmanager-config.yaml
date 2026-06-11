@@ -19,10 +19,10 @@ spec:
   receivers:
   - name: 'email-receiver'
     emailConfigs:
-    - to: [EMAIL_ADDRESS]'
-      from: [EMAIL_ADDRESS]'
+    - to: 'thanhtrung8ctv@gmail.com'
+      from: 'thanhtrung8ctv@gmail.com'
       smarthost: 'smtp.gmail.com:587'
-      authUsername: [EMAIL_ADDRESS]'
+      authUsername: 'thanhtrung8ctv@gmail.com'
       authPassword:
         name: email-smtp-secret
         key: password
