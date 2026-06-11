@@ -11,9 +11,9 @@ spec:
     rules:
     - alert: HighErrorRateAPI
       expr: |
-        sum(rate(flask_http_request_total{status=~"5.*", namespace="demo"}[1m])) 
+        sum(rate(flask_http_request_total{status=~"5.*", namespace="demo"}[1m])) by (namespace)
         / 
-        sum(rate(flask_http_request_total{namespace="demo"}[1m])) > 0.05
+        sum(rate(flask_http_request_total{namespace="demo"}[1m])) by (namespace) > 0.05
       for: 1m
       labels:
         severity: critical
