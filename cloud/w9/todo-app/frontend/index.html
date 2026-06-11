@@ -38,9 +38,7 @@
 </div>
 
 <script>
-  const API = window.location.hostname === 'localhost'
-    ? 'http://localhost:5000'
-    : 'http://todo-backend-svc.demo.svc.cluster.local:5000';
+  const API = 'http://192.168.49.2:30500';
 
   async function loadTodos() {
     try {

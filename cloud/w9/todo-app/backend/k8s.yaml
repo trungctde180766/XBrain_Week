@@ -29,8 +29,10 @@ metadata:
   name: todo-backend-svc
   namespace: demo
 spec:
+  type: NodePort
   selector:
     app: todo-backend
   ports:
   - port: 5000
     targetPort: 5000
+    nodePort: 30500
