@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>W9 GitOps Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #050a14;
+      --surface: #0d1a2d;
+      --surface2: #112240;
+      --border: #1e3a5f;
+      --accent: #00d4ff;
+      --accent2: #7c3aed;
+      --green: #00e676;
+      --yellow: #ffd740;
+      --red: #ff5252;
+      --text: #e2e8f0;
+      --muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+    /* Animated background */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: radial-gradient(ellipse at 20% 20%, rgba(0,212,255,.06) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 80%, rgba(124,58,237,.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    /* Header */
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+      background: rgba(13,26,45,.8);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .logo-text { font-size: 1.1rem; font-weight: 700; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .logo-sub { font-size: .75rem; color: var(--muted); }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .refresh-btn {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none; border-radius: 8px; padding: 8px 16px;
+      color: white; font-weight: 600; font-size: .85rem; cursor: pointer;
+      transition: opacity .2s;
+    }
+    .refresh-btn:hover { opacity: .85; }
+    .live-badge { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--green); }
+    .live-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
+
+    /* Main layout */
+    main { padding: 24px 32px; max-width: 1600px; margin: 0 auto; }
+
+    /* Summary cards */
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .summary-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px;
+      position: relative; overflow: hidden;
+      transition: transform .2s, border-color .2s;
+    }
+    .summary-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+    .summary-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    }
+    .summary-card.blue::before { background: linear-gradient(90deg, var(--accent), transparent); }
+    .summary-card.purple::before { background: linear-gradient(90deg, var(--accent2), transparent); }
+    .summary-card.green::before { background: linear-gradient(90deg, var(--green), transparent); }
+    .summary-card.yellow::before { background: linear-gradient(90deg, var(--yellow), transparent); }
+    .card-label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+    .card-value { font-size: 2rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+    .card-value.blue { color: var(--accent); }
+    .card-value.purple { color: var(--accent2); }
+    .card-value.green { color: var(--green); }
+    .card-value.yellow { color: var(--yellow); }
+    .card-icon { position: absolute; right: 16px; top: 16px; font-size: 1.8rem; opacity: .15; }
+
+    /* Section title */
+    .section-title { font-size: .85rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* Grids */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 28px; }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 28px; }
+    @media(max-width:1100px) { .two-col,.three-col { grid-template-columns:1fr; } }
+
+    /* Panel */
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .panel-title { font-size: .9rem; font-weight: 600; margin-bottom: 16px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .panel-title span { font-size: 1rem; }
+
+    /* App cards */
+    .app-card {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+      padding: 14px 16px; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 12px;
+      transition: border-color .2s;
+    }
+    .app-card:hover { border-color: var(--accent); }
+    .app-name { font-weight: 600; font-size: .9rem; flex: 1; }
+    .app-sub { font-size: .75rem; color: var(--muted); margin-top: 2px; }
+    .badge {
+      font-size: .7rem; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+      text-transform: uppercase; letter-spacing: .05em;
+    }
+    .badge.healthy, .badge.synced { background: rgba(0,230,118,.15); color: var(--green); border: 1px solid rgba(0,230,118,.3); }
+    .badge.degraded, .badge.outofsync { background: rgba(255,82,82,.15); color: var(--red); border: 1px solid rgba(255,82,82,.3); }
+    .badge.progressing { background: rgba(255,215,64,.15); color: var(--yellow); border: 1px solid rgba(255,215,64,.3); }
+    .badge.unknown { background: rgba(100,116,139,.15); color: var(--muted); border: 1px solid rgba(100,116,139,.3); }
+
+    /* Pod table */
+    .pod-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    .pod-table th { text-align: left; color: var(--muted); font-weight: 500; padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; }
+    .pod-table td { padding: 10px 10px; border-bottom: 1px solid rgba(30,58,95,.5); }
+    .pod-table tr:last-child td { border-bottom: none; }
+    .pod-table tr:hover td { background: rgba(0,212,255,.03); }
+    .pod-name { font-family: 'JetBrains Mono', monospace; font-size: .78rem; color: var(--accent); }
+    .ns-badge { background: rgba(124,58,237,.15); color: #a78bfa; border: 1px solid rgba(124,58,237,.3); padding: 2px 8px; border-radius: 6px; font-size: .7rem; font-family: 'JetBrains Mono'; }
+    .status-dot { display: inline-flex; align-items: center; gap: 6px; }
+    .status-dot::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .status-dot.running { color: var(--green); }
+    .status-dot.pending { color: var(--yellow); }
+    .status-dot.failed { color: var(--red); }
+
+    /* Architecture diagram */
+    .arch-container { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 28px; }
+    .arch-flow { display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: wrap; }
+    .arch-node {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
+      padding: 16px 20px; text-align: center; min-width: 110px;
+      transition: border-color .3s, transform .3s;
+    }
+    .arch-node:hover { border-color: var(--accent); transform: scale(1.05); }
+    .arch-node.active { border-color: var(--green); box-shadow: 0 0 20px rgba(0,230,118,.15); }
+    .arch-node-icon { font-size: 1.8rem; margin-bottom: 6px; }
+    .arch-node-label { font-size: .75rem; font-weight: 600; color: var(--text); }
+    .arch-node-sub { font-size: .65rem; color: var(--muted); margin-top: 2px; }
+    .arch-arrow {
+      display: flex; align-items: center; padding: 0 8px; color: var(--accent);
+      font-size: 1.2rem; position: relative;
+    }
+    .arch-arrow-label { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: .6rem; color: var(--muted); white-space: nowrap; }
+    .arch-group { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+    .arch-group-label { font-size: .65rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+
+    /* Rollout status */
+    .rollout-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; }
+    .rollout-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .rollout-name { font-family: 'JetBrains Mono'; font-size: .85rem; font-weight: 600; color: var(--accent); }
+    .progress-bar { background: var(--border); border-radius: 4px; height: 6px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--green), var(--accent)); transition: width .5s ease; }
+
+    /* Empty state */
+    .empty { text-align: center; color: var(--muted); padding: 32px; font-size: .85rem; }
+
+    /* Loading */
+    .loading { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Node card */
+    .node-card { background: var(--surface2); border: 1px solid var(--green); border-radius: 10px; padding: 16px; text-align: center; }
+    .node-name { font-family: 'JetBrains Mono'; font-size: .8rem; color: var(--accent); margin-bottom: 8px; }
+    .node-stat { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); margin-top: 4px; }
+
+    footer { text-align: center; padding: 24px; color: var(--muted); font-size: .75rem; border-top: 1px solid var(--border); margin-top: 32px; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-icon">⎈</div>
+    <div>
+      <div class="logo-text">W9 GitOps Dashboard</div>
+      <div class="logo-sub">Real-time Kubernetes Observability</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div> LIVE</div>
+    <button class="refresh-btn" onclick="loadAll()">⟳ Refresh</button>
+  </div>
+</header>
+
+<main>
+  <!-- Summary -->
+  <div class="summary-grid" id="summary">
+    <div class="summary-card blue"><div class="card-label">Pods Running</div><div class="card-value blue" id="s-pods">...</div><div class="card-icon">📦</div></div>
+    <div class="summary-card green"><div class="card-label">Apps Synced</div><div class="card-value green" id="s-apps">...</div><div class="card-icon">✅</div></div>
+    <div class="summary-card purple"><div class="card-label">Nodes</div><div class="card-value purple" id="s-nodes">...</div><div class="card-icon">🖥️</div></div>
+    <div class="summary-card yellow"><div class="card-label">Namespaces</div><div class="card-value yellow" id="s-ns">...</div><div class="card-icon">📁</div></div>
+  </div>
+
+  <!-- Architecture -->
+  <div class="arch-container">
+    <div class="section-title">⚙️ GitOps Architecture Flow</div>
+    <div class="arch-flow">
+      <div class="arch-node active">
+        <div class="arch-node-icon">👨‍💻</div>
+        <div class="arch-node-label">Developer</div>
+        <div class="arch-node-sub">Push code</div>
+      </div>
+      <div class="arch-arrow"><div class="arch-arrow-label">git push</div>→</div>
+      <div class="arch-node active">
+        <div class="arch-node-icon">🐙</div>
+        <div class="arch-node-label">GitHub</div>
+        <div class="arch-node-sub">XBrain_Week</div>
+      </div>
+      <div class="arch-arrow"><div class="arch-arrow-label">watches</div>→</div>
+      <div class="arch-node active">
+        <div class="arch-node-icon">🔄</div>
+        <div class="arch-node-label">ArgoCD</div>
+        <div class="arch-node-sub">GitOps Engine</div>
+      </div>
+      <div class="arch-arrow"><div class="arch-arrow-label">deploys</div>→</div>
+      <div class="arch-group">
+        <div class="arch-node active">
+          <div class="arch-node-icon">🚀</div>
+          <div class="arch-node-label">Argo Rollouts</div>
+          <div class="arch-node-sub">Canary Deploy</div>
+        </div>
+        <div class="arch-node active">
+          <div class="arch-node-icon">📊</div>
+          <div class="arch-node-label">Prometheus</div>
+          <div class="arch-node-sub">Monitoring</div>
+        </div>
+      </div>
+      <div class="arch-arrow"><div class="arch-arrow-label">alerts</div>→</div>
+      <div class="arch-node active">
+        <div class="arch-node-icon">📧</div>
+        <div class="arch-node-label">Alertmanager</div>
+        <div class="arch-node-sub">Email notify</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ArgoCD Apps + Rollouts -->
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-title"><span>🔄</span> ArgoCD Applications</div>
+      <div id="apps-list"><div class="empty"><span class="loading"></span></div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><span>🚀</span> Argo Rollouts Status</div>
+      <div id="rollouts-list"><div class="empty"><span class="loading"></span></div></div>
+    </div>
+  </div>
+
+  <!-- Pods table -->
+  <div class="panel" style="margin-bottom:28px">
+    <div class="panel-title"><span>📦</span> All Pods (trừ kube-system)</div>
+    <div id="pods-table"><div class="empty"><span class="loading"></span></div></div>
+  </div>
+
+  <!-- Nodes -->
+  <div class="panel" style="margin-bottom:28px">
+    <div class="panel-title"><span>🖥️</span> Cluster Nodes</div>
+    <div id="nodes-list" style="display:flex;gap:16px;flex-wrap:wrap"><div class="empty"><span class="loading"></span></div></div>
+  </div>
+</main>
+
+<footer>W9 GitOps Dashboard · trungctde180766 · Kubernetes v1.35.1 · ArgoCD v2.x · Prometheus · Argo Rollouts</footer>
+
+<script>
+const API = 'http://localhost:9999/api';
+
+function badgeClass(val) {
+  val = (val || '').toLowerCase();
+  if (val.includes('healthy')) return 'healthy';
+  if (val.includes('synced') && !val.includes('out')) return 'synced';
+  if (val.includes('outofsync') || val.includes('out of sync')) return 'outofsync';
+  if (val.includes('degraded')) return 'degraded';
+  if (val.includes('progressing')) return 'progressing';
+  return 'unknown';
+}
+
+function statusDotClass(phase) {
+  if (phase === 'Running') return 'running';
+  if (phase === 'Pending') return 'pending';
+  return 'failed';
+}
+
+async function loadSummary() {
+  try {
+    const r = await fetch(`${API}/summary`);
+    const d = await r.json();
+    document.getElementById('s-pods').textContent = `${d.pods_running}/${d.pods_total}`;
+    document.getElementById('s-apps').textContent = `${d.apps_synced}/${d.apps_total}`;
+    document.getElementById('s-nodes').textContent = d.nodes;
+  } catch { document.getElementById('s-pods').textContent = 'ERR'; }
+}
+
+async function loadApps() {
+  const el = document.getElementById('apps-list');
+  try {
+    const r = await fetch(`${API}/apps`);
+    const apps = await r.json();
+    const nsSet = new Set(apps.map(a => a.name));
+    document.getElementById('s-ns').textContent = nsSet.size;
+    if (!apps.length) { el.innerHTML = '<div class="empty">Không có app nào</div>'; return; }
+    el.innerHTML = apps.map(a => `
+      <div class="app-card">
+        <div style="font-size:1.4rem">${a.name === 'root-app' ? '🌳' : a.name.includes('prometheus') ? '📊' : a.name.includes('rollout') ? '🚀' : a.name.includes('todo') ? '📝' : '⚙️'}</div>
+        <div style="flex:1">
+          <div class="app-name">${a.name}</div>
+          <div class="app-sub">${a.repo.replace('https://','').substring(0,45)}...</div>
+        </div>
+        <span class="badge ${badgeClass(a.health)}">${a.health}</span>
+        <span class="badge ${badgeClass(a.sync)}">${a.sync}</span>
+      </div>`).join('');
+  } catch { el.innerHTML = '<div class="empty">❌ Không kết nối được Dashboard API<br><small>Chạy: python cloud/w9/dashboard/server.py</small></div>'; }
+}
+
+async function loadRollouts() {
+  const el = document.getElementById('rollouts-list');
+  try {
+    const r = await fetch(`${API}/rollouts`);
+    const rollouts = await r.json();
+    if (!rollouts.length) { el.innerHTML = '<div class="empty">Không có rollout nào</div>'; return; }
+    el.innerHTML = rollouts.map(ro => {
+      const pct = ro.desired > 0 ? Math.round((ro.ready / ro.desired) * 100) : 0;
+      const phaseColor = ro.phase === 'Healthy' ? '#00e676' : ro.phase === 'Degraded' ? '#ff5252' : '#ffd740';
+      return `<div class="rollout-item">
+        <div class="rollout-top">
+          <span class="rollout-name">${ro.name}</span>
+          <span class="badge ${badgeClass(ro.phase)}">${ro.phase}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.75rem;color:#64748b;margin-bottom:6px">
+          <span>Ready: ${ro.ready}/${ro.desired}</span><span>${pct}%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+  } catch { el.innerHTML = '<div class="empty">Không có dữ liệu</div>'; }
+}
+
+async function loadPods() {
+  const el = document.getElementById('pods-table');
+  try {
+    const r = await fetch(`${API}/pods`);
+    const pods = await r.json();
+    if (!pods.length) { el.innerHTML = '<div class="empty">Không có pod nào</div>'; return; }
+    el.innerHTML = `<table class="pod-table">
+      <thead><tr><th>Namespace</th><th>Pod Name</th><th>Status</th><th>Ready</th><th>Restarts</th></tr></thead>
+      <tbody>${pods.map(p => `
+        <tr>
+          <td><span class="ns-badge">${p.namespace}</span></td>
+          <td><span class="pod-name">${p.name}</span></td>
+          <td><span class="status-dot ${statusDotClass(p.phase)}">${p.phase}</span></td>
+          <td style="font-family:'JetBrains Mono';font-size:.78rem">${p.ready}</td>
+          <td style="color:${p.restarts > 0 ? '#ffd740' : '#64748b'};font-family:'JetBrains Mono';font-size:.78rem">${p.restarts}</td>
+        </tr>`).join('')}
+      </tbody></table>`;
+  } catch { el.innerHTML = '<div class="empty">Không có dữ liệu</div>'; }
+}
+
+async function loadNodes() {
+  const el = document.getElementById('nodes-list');
+  try {
+    const r = await fetch(`${API}/nodes`);
+    const nodes = await r.json();
+    if (!nodes.length) { el.innerHTML = '<div class="empty">Không có node nào</div>'; return; }
+    el.innerHTML = nodes.map(n => `
+      <div class="node-card" style="min-width:200px">
+        <div style="font-size:1.8rem;margin-bottom:6px">🖥️</div>
+        <div class="node-name">${n.name}</div>
+        <span class="badge healthy">${n.status}</span>
+        <div class="node-stat"><span>CPU</span><span style="color:#e2e8f0">${n.cpu} cores</span></div>
+        <div class="node-stat"><span>Memory</span><span style="color:#e2e8f0">${Math.round(parseInt(n.memory)/1024/1024)}Gi</span></div>
+      </div>`).join('');
+  } catch { el.innerHTML = '<div class="empty">Không có dữ liệu</div>'; }
+}
+
+function loadAll() {
+  loadSummary();
+  loadApps();
+  loadRollouts();
+  loadPods();
+  loadNodes();
+}
+
+loadAll();
+setInterval(loadAll, 10000); // auto-refresh mỗi 10 giây
+</script>
+</body>
+</html>
