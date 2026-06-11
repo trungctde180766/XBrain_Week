@@ -1,20 +1,18 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: my-app
+  name: root-app
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: 'https://github.com/trungctde180766/XBrain_Week.git'
     targetRevision: HEAD
-    path: cloud/w9/day-c/rollout
+    path: cloud/w9/argocd/apps
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: prod
+    namespace: argocd
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:
-      - CreateNamespace=true

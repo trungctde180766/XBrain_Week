@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: email-config
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  route:
+    groupBy: ['alertname']
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 12h
+    receiver: 'email-receiver'
+    matchers:
+    - name: severity
+      matchType: =
+      value: critical
+  receivers:
+  - name: 'email-receiver'
+    emailConfigs:
+    - to: [EMAIL_ADDRESS]'
+      from: [EMAIL_ADDRESS]'
+      smarthost: 'smtp.gmail.com:587'
+      authUsername: [EMAIL_ADDRESS]'
+      authPassword:
+        name: email-smtp-secret
+        key: password

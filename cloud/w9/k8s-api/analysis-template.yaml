@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: success-rate
+  namespace: demo
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  metrics:
+  - name: success-rate
+    interval: 10s
+    count: 3
+    successCondition: result[0] >= 0.90
+    failureLimit: 1
+    provider:
+      prometheus:
+        address: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+        query: |
+          sum(rate(flask_http_request_total{status!~"5.*", namespace="demo"}[1m])) 
+          / 
+          sum(rate(flask_http_request_total{namespace="demo"}[1m]))
