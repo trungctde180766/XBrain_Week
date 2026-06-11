@@ -2,6 +2,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: AnalysisTemplate
 metadata:
   name: success-rate
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   args:
   - name: service-name
