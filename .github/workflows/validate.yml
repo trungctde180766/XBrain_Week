@@ -1,0 +1,24 @@
+name: Kubeconform Validate
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Kubeconform
+        uses: fluxcd/pkg/actions/kubeconform@main
+
+      - name: Validate Kubernetes Manifests
+        run: |
+          kubeconform -summary -ignore-missing-schemas -schema-location default -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' cloud/w9/k8s-api/
+          kubeconform -summary -ignore-missing-schemas cloud/w9/argocd/apps/
