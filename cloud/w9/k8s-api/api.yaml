@@ -26,13 +26,17 @@ spec:
         - name: ERROR_RATE
           value: "0.0"
         - name: VERSION
-          value: "v1-clean"
+          value: "v1"
         readinessProbe:
           httpGet:
             path: /healthz
             port: 8080
   strategy:
     canary:
+      analysis:
+        templates:
+        - templateName: success-rate
+        startingStep: 1 # Run analysis in background after first weight is applied
       steps:
       - setWeight: 25
       - pause: { duration: 30s }
