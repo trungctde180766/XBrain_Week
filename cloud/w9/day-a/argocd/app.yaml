@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/trungctde180766/W4.git'
+    repoURL: 'https://github.com/trungctde180766/XBrain_Week.git'
     targetRevision: HEAD
     path: cloud/w9/day-c/rollout
   destination:
