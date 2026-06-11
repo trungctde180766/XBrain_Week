@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: todo-frontend
-        image: todo-frontend:1
+        image: todo-frontend:2
         imagePullPolicy: Never
         ports:
         - containerPort: 80
