@@ -122,3 +122,6 @@ Cấu hình định tuyến và gửi email cảnh báo về hòm thư cá nhân
 
 ### 1. Giao diện ArgoCD ở trạng thái bình thường (Healthy)
 ![ArgoCD Healthy](../../assets/API.png)
+
+### 2. Giao diện Prometheus Targets hoạt động tốt (Up)
+![Prometheus Targets](../../assets/prometheus_targets.png)
