@@ -115,3 +115,10 @@ Cấu hình định tuyến và gửi email cảnh báo về hòm thư cá nhân
 1. Trên Dashboard, bấm nút **`🛠️ 2. Fix & Restore`**.
 2. Hệ thống sẽ thay đổi cấu hình về trạng thái an toàn ban đầu (`VERSION=v1` và `ERROR_RATE=0.0`), đẩy lên GitHub.
 3. ArgoCD tự động đồng bộ lại và đưa cụm K8s trở lại trạng thái **Healthy** hoàn toàn.
+
+---
+
+## Minh chứng triển khai (Deployment Evidence)
+
+### 1. Giao diện ArgoCD ở trạng thái bình thường (Healthy)
+![ArgoCD Healthy](../../assets/API.png)

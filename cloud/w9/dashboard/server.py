@@ -1,9 +1,15 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import subprocess, json, os, threading, time
 
 app = Flask(__name__)
 CORS(app)
+
+DASH_DIR = os.path.dirname(os.path.abspath(__file__))
+
+@app.route("/")
+def serve_index():
+    return send_from_directory(DASH_DIR, "index.html")
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
 API_YAML = os.path.join(BASE, 'cloud/w9/k8s-api/api.yaml')
@@ -50,6 +56,10 @@ def git_push(msg):
     run(f'git add cloud/w9/k8s-api/api.yaml', cwd=BASE)
     run(f'git commit -m "{msg}"', cwd=BASE)
     out, err, code = run('git push', cwd=BASE)
+    if code == 0:
+        # Trigger ArgoCD to instantly sync the api app and root-app
+        run('kubectl patch application api -n argocd --type=merge -p "{\\\"operation\\\":{\\\"sync\\\":{\\\"revision\\\":\\\"\\\"}}}"')
+        run('kubectl patch application root-app -n argocd --type=merge -p "{\\\"operation\\\":{\\\"sync\\\":{\\\"revision\\\":\\\"\\\"}}}"')
     return code == 0
 
 # ─────────────────────────────────────────
@@ -146,9 +156,10 @@ def current_config():
 # ─────────────────────────────────────────
 def do_inject_error():
     log("🔴 [DEMO] Bắt đầu inject lỗi vào bản v2...", "warn")
-    set_env_in_yaml("v2", "1.0")
-    log("📝 Đã sửa api.yaml: VERSION=v2, ERROR_RATE=1.0", "warn")
-    ok = git_push("demo: inject error v2 ERROR_RATE=1.0")
+    version_tag = f"v2-{int(time.time())}"
+    set_env_in_yaml(version_tag, "1.0")
+    log(f"📝 Đã sửa api.yaml: VERSION={version_tag}, ERROR_RATE=1.0", "warn")
+    ok = git_push(f"demo: inject error {version_tag} ERROR_RATE=1.0")
     if ok:
         log("🚀 Đã push lên GitHub. ArgoCD sẽ phát hiện và deploy Canary 25%...", "warn")
         log("⏳ Prometheus đang đo lường tỷ lệ lỗi...", "warn")
@@ -164,9 +175,10 @@ def do_inject_error():
 
 def do_fix():
     log("🟢 [DEMO] Khôi phục hệ thống về trạng thái bình thường...", "info")
-    set_env_in_yaml("v1", "0.0")
-    log("📝 Đã sửa api.yaml: VERSION=v1, ERROR_RATE=0.0", "info")
-    ok = git_push("demo: restore v1 healthy")
+    version_tag = f"v1-{int(time.time())}"
+    set_env_in_yaml(version_tag, "0.0")
+    log(f"📝 Đã sửa api.yaml: VERSION={version_tag}, ERROR_RATE=0.0", "info")
+    ok = git_push(f"demo: restore {version_tag} healthy")
     if ok:
         log("🚀 Đã push lên GitHub. ArgoCD sync bản v1 khoẻ mạnh...", "info")
         log("✅ Hệ thống đã hoàn toàn hồi phục!", "success")
@@ -188,8 +200,20 @@ def fix():
 @app.route("/api/demo/sync", methods=["POST"])
 def sync():
     log("🔄 Bấm nút: Force Sync ArgoCD", "info")
-    run("argocd app sync root-app --server localhost:8081 --insecure 2>/dev/null")
+    run('kubectl patch application api -n argocd --type=merge -p "{\\\"operation\\\":{\\\"sync\\\":{\\\"revision\\\":\\\"\\\"}}}"')
+    run('kubectl patch application root-app -n argocd --type=merge -p "{\\\"operation\\\":{\\\"sync\\\":{\\\"revision\\\":\\\"\\\"}}}"')
     log("✅ ArgoCD sync triggered", "success")
+    return jsonify({"status": "ok"})
+
+@app.route("/api/demo/explain", methods=["POST"])
+def explain():
+    log("📚 [HƯỚNG DẪN FLOW GITOPS W9]", "info")
+    log("1️⃣ Dev push code lên GitHub: File api.yaml thay đổi VERSION và ERROR_RATE.", "info")
+    log("2️⃣ ArgoCD phát hiện git commit mới và đồng bộ (Sync) ứng dụng lên K8s cluster.", "info")
+    log("3️⃣ Argo Rollouts chạy Canary: Deploy 25% (1 Pod v2) song song với 75% (3 Pods v1).", "info")
+    log("4️⃣ AnalysisTemplate liên tục đo lường SLO Success Rate từ Prometheus metrics.", "info")
+    log("5️⃣ Nếu Success Rate < 90%: Argo Rollouts tự động ABORT Canary và rollback 100% về v1.", "error")
+    log("6️⃣ Alertmanager phát hiện vi phạm SLO -> gửi email cảnh báo về thanhtrung8ctv@gmail.com.", "error")
     return jsonify({"status": "ok"})
 
 if __name__ == "__main__":

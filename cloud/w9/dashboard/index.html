@@ -1,393 +1,230 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>W9 GitOps Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-  <style>
-    :root {
-      --bg: #050a14;
-      --surface: #0d1a2d;
-      --surface2: #112240;
-      --border: #1e3a5f;
-      --accent: #00d4ff;
-      --accent2: #7c3aed;
-      --green: #00e676;
-      --yellow: #ffd740;
-      --red: #ff5252;
-      --text: #e2e8f0;
-      --muted: #64748b;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
-
-    /* Animated background */
-    body::before {
-      content: '';
-      position: fixed; inset: 0;
-      background: radial-gradient(ellipse at 20% 20%, rgba(0,212,255,.06) 0%, transparent 60%),
-                  radial-gradient(ellipse at 80% 80%, rgba(124,58,237,.06) 0%, transparent 60%);
-      pointer-events: none;
-    }
-
-    /* Header */
-    header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 20px 32px;
-      border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(10px);
-      background: rgba(13,26,45,.8);
-      position: sticky; top: 0; z-index: 100;
-    }
-    .logo { display: flex; align-items: center; gap: 12px; }
-    .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
-    .logo-text { font-size: 1.1rem; font-weight: 700; background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .logo-sub { font-size: .75rem; color: var(--muted); }
-    .header-right { display: flex; align-items: center; gap: 16px; }
-    .refresh-btn {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border: none; border-radius: 8px; padding: 8px 16px;
-      color: white; font-weight: 600; font-size: .85rem; cursor: pointer;
-      transition: opacity .2s;
-    }
-    .refresh-btn:hover { opacity: .85; }
-    .live-badge { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--green); }
-    .live-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
-
-    /* Main layout */
-    main { padding: 24px 32px; max-width: 1600px; margin: 0 auto; }
-
-    /* Summary cards */
-    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
-    .summary-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px; padding: 20px;
-      position: relative; overflow: hidden;
-      transition: transform .2s, border-color .2s;
-    }
-    .summary-card:hover { transform: translateY(-2px); border-color: var(--accent); }
-    .summary-card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-    }
-    .summary-card.blue::before { background: linear-gradient(90deg, var(--accent), transparent); }
-    .summary-card.purple::before { background: linear-gradient(90deg, var(--accent2), transparent); }
-    .summary-card.green::before { background: linear-gradient(90deg, var(--green), transparent); }
-    .summary-card.yellow::before { background: linear-gradient(90deg, var(--yellow), transparent); }
-    .card-label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
-    .card-value { font-size: 2rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-    .card-value.blue { color: var(--accent); }
-    .card-value.purple { color: var(--accent2); }
-    .card-value.green { color: var(--green); }
-    .card-value.yellow { color: var(--yellow); }
-    .card-icon { position: absolute; right: 16px; top: 16px; font-size: 1.8rem; opacity: .15; }
-
-    /* Section title */
-    .section-title { font-size: .85rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
-    .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-    /* Grids */
-    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 28px; }
-    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 28px; }
-    @media(max-width:1100px) { .two-col,.three-col { grid-template-columns:1fr; } }
-
-    /* Panel */
-    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
-    .panel-title { font-size: .9rem; font-weight: 600; margin-bottom: 16px; color: var(--text); display: flex; align-items: center; gap: 8px; }
-    .panel-title span { font-size: 1rem; }
-
-    /* App cards */
-    .app-card {
-      background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
-      padding: 14px 16px; margin-bottom: 10px;
-      display: flex; align-items: center; gap: 12px;
-      transition: border-color .2s;
-    }
-    .app-card:hover { border-color: var(--accent); }
-    .app-name { font-weight: 600; font-size: .9rem; flex: 1; }
-    .app-sub { font-size: .75rem; color: var(--muted); margin-top: 2px; }
-    .badge {
-      font-size: .7rem; font-weight: 600; padding: 3px 10px; border-radius: 20px;
-      text-transform: uppercase; letter-spacing: .05em;
-    }
-    .badge.healthy, .badge.synced { background: rgba(0,230,118,.15); color: var(--green); border: 1px solid rgba(0,230,118,.3); }
-    .badge.degraded, .badge.outofsync { background: rgba(255,82,82,.15); color: var(--red); border: 1px solid rgba(255,82,82,.3); }
-    .badge.progressing { background: rgba(255,215,64,.15); color: var(--yellow); border: 1px solid rgba(255,215,64,.3); }
-    .badge.unknown { background: rgba(100,116,139,.15); color: var(--muted); border: 1px solid rgba(100,116,139,.3); }
-
-    /* Pod table */
-    .pod-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
-    .pod-table th { text-align: left; color: var(--muted); font-weight: 500; padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; }
-    .pod-table td { padding: 10px 10px; border-bottom: 1px solid rgba(30,58,95,.5); }
-    .pod-table tr:last-child td { border-bottom: none; }
-    .pod-table tr:hover td { background: rgba(0,212,255,.03); }
-    .pod-name { font-family: 'JetBrains Mono', monospace; font-size: .78rem; color: var(--accent); }
-    .ns-badge { background: rgba(124,58,237,.15); color: #a78bfa; border: 1px solid rgba(124,58,237,.3); padding: 2px 8px; border-radius: 6px; font-size: .7rem; font-family: 'JetBrains Mono'; }
-    .status-dot { display: inline-flex; align-items: center; gap: 6px; }
-    .status-dot::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-    .status-dot.running { color: var(--green); }
-    .status-dot.pending { color: var(--yellow); }
-    .status-dot.failed { color: var(--red); }
-
-    /* Architecture diagram */
-    .arch-container { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 28px; }
-    .arch-flow { display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: wrap; }
-    .arch-node {
-      background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
-      padding: 16px 20px; text-align: center; min-width: 110px;
-      transition: border-color .3s, transform .3s;
-    }
-    .arch-node:hover { border-color: var(--accent); transform: scale(1.05); }
-    .arch-node.active { border-color: var(--green); box-shadow: 0 0 20px rgba(0,230,118,.15); }
-    .arch-node-icon { font-size: 1.8rem; margin-bottom: 6px; }
-    .arch-node-label { font-size: .75rem; font-weight: 600; color: var(--text); }
-    .arch-node-sub { font-size: .65rem; color: var(--muted); margin-top: 2px; }
-    .arch-arrow {
-      display: flex; align-items: center; padding: 0 8px; color: var(--accent);
-      font-size: 1.2rem; position: relative;
-    }
-    .arch-arrow-label { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: .6rem; color: var(--muted); white-space: nowrap; }
-    .arch-group { display: flex; flex-direction: column; gap: 10px; align-items: center; }
-    .arch-group-label { font-size: .65rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
-
-    /* Rollout status */
-    .rollout-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; }
-    .rollout-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .rollout-name { font-family: 'JetBrains Mono'; font-size: .85rem; font-weight: 600; color: var(--accent); }
-    .progress-bar { background: var(--border); border-radius: 4px; height: 6px; overflow: hidden; }
-    .progress-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--green), var(--accent)); transition: width .5s ease; }
-
-    /* Empty state */
-    .empty { text-align: center; color: var(--muted); padding: 32px; font-size: .85rem; }
-
-    /* Loading */
-    .loading { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* Node card */
-    .node-card { background: var(--surface2); border: 1px solid var(--green); border-radius: 10px; padding: 16px; text-align: center; }
-    .node-name { font-family: 'JetBrains Mono'; font-size: .8rem; color: var(--accent); margin-bottom: 8px; }
-    .node-stat { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); margin-top: 4px; }
-
-    footer { text-align: center; padding: 24px; color: var(--muted); font-size: .75rem; border-top: 1px solid var(--border); margin-top: 32px; }
-  </style>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>W9 GitOps Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#050a14;--s:#0d1a2d;--s2:#112240;--bd:#1e3a5f;--ac:#00d4ff;--pp:#7c3aed;--gn:#00e676;--yw:#ffd740;--rd:#ff5252;--tx:#e2e8f0;--mt:#64748b}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(at 20% 20%,rgba(0,212,255,.06),transparent 60%),radial-gradient(at 80% 80%,rgba(124,58,237,.06),transparent 60%);pointer-events:none}
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid var(--bd);background:rgba(13,26,45,.9);position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--ac),var(--pp));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.brand h1{font-size:1rem;font-weight:700;background:linear-gradient(90deg,var(--ac),var(--pp));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.brand p{font-size:.68rem;color:var(--mt)}
+.hdr-r{display:flex;align-items:center;gap:14px}
+.live{display:flex;align-items:center;gap:5px;font-size:.75rem;color:var(--gn)}
+.live-dot{width:7px;height:7px;background:var(--gn);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.4}}
+.tabs{display:flex;gap:4px;background:var(--s2);border-radius:8px;padding:3px}
+.tab{padding:7px 16px;border:none;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;background:transparent;color:var(--mt);transition:.2s}
+.tab.active{background:linear-gradient(135deg,var(--ac),var(--pp));color:#fff}
+main{max-width:1400px;margin:0 auto;padding:20px 28px}
+.page{display:none}.page.active{display:block}
+.sec{font-size:.78rem;font-weight:600;color:var(--mt);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.sec::after{content:'';flex:1;height:1px;background:var(--bd)}
+.panel{background:var(--s);border:1px solid var(--bd);border-radius:12px;padding:18px;margin-bottom:18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+/* Cards */
+.sc{background:var(--s);border:1px solid var(--bd);border-radius:10px;padding:16px;position:relative;overflow:hidden;transition:.2s}
+.sc:hover{transform:translateY(-2px);border-color:var(--ac)}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.sc.b::before{background:var(--ac)}.sc.p::before{background:var(--pp)}.sc.g::before{background:var(--gn)}.sc.y::before{background:var(--yw)}
+.sc-l{font-size:.7rem;color:var(--mt);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.sc-v{font-size:1.8rem;font-weight:700;font-family:'JetBrains Mono'}
+.sc-v.b{color:var(--ac)}.sc-v.p{color:var(--pp)}.sc-v.g{color:var(--gn)}.sc-v.y{color:var(--yw)}
+.sc-i{position:absolute;right:14px;top:14px;font-size:1.5rem;opacity:.15}
+/* App row */
+.ar{display:flex;align-items:center;gap:10px;padding:10px;background:var(--s2);border-radius:8px;margin-bottom:7px;border:1px solid var(--bd)}
+.ar:hover{border-color:var(--ac)}
+.an{flex:1;font-size:.83rem;font-weight:600}
+.bd{font-size:.63rem;font-weight:700;padding:2px 8px;border-radius:16px;text-transform:uppercase}
+.bd.h,.bd.sy{background:rgba(0,230,118,.12);color:var(--gn);border:1px solid rgba(0,230,118,.3)}
+.bd.d,.bd.os{background:rgba(255,82,82,.12);color:var(--rd);border:1px solid rgba(255,82,82,.3)}
+.bd.pr{background:rgba(255,215,64,.12);color:var(--yw);border:1px solid rgba(255,215,64,.3)}
+.bd.uk{background:rgba(100,116,139,.12);color:var(--mt);border:1px solid rgba(100,116,139,.3)}
+/* Pod table */
+.pt{width:100%;border-collapse:collapse;font-size:.78rem}
+.pt th{text-align:left;color:var(--mt);font-weight:500;padding:7px 8px;border-bottom:1px solid var(--bd);font-size:.7rem;text-transform:uppercase}
+.pt td{padding:8px;border-bottom:1px solid rgba(30,58,95,.4)}
+.pt tr:hover td{background:rgba(0,212,255,.03)}
+.pn{font-family:'JetBrains Mono';font-size:.73rem;color:var(--ac)}
+.ns{background:rgba(124,58,237,.12);color:#a78bfa;border:1px solid rgba(124,58,237,.3);padding:2px 7px;border-radius:5px;font-size:.65rem;font-family:'JetBrains Mono'}
+.sd{display:inline-flex;align-items:center;gap:5px}
+.sd::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+.sd.r{color:var(--gn)}.sd.pe{color:var(--yw)}.sd.f{color:var(--rd)}
+/* Demo buttons */
+.bg{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:16px}
+.db{border:none;border-radius:10px;padding:16px;cursor:pointer;text-align:left;transition:.2s}
+.db:active{transform:scale(.97)}
+.db .di{font-size:1.4rem;margin-bottom:6px}
+.db .dt{font-size:.85rem;font-weight:700;margin-bottom:3px}
+.db .dd{font-size:.68rem;opacity:.8;line-height:1.4}
+.br{background:linear-gradient(135deg,#7f1d1d,#991b1b);border:1px solid #ef4444;color:#fca5a5}
+.br:hover{box-shadow:0 0 18px rgba(239,68,68,.3)}
+.bgn{background:linear-gradient(135deg,#14532d,#166534);border:1px solid #22c55e;color:#86efac}
+.bgn:hover{box-shadow:0 0 18px rgba(34,197,94,.3)}
+.bbl{background:linear-gradient(135deg,#0c4a6e,#0369a1);border:1px solid #0ea5e9;color:#7dd3fc}
+.bbl:hover{box-shadow:0 0 18px rgba(14,165,233,.3)}
+.bpp{background:linear-gradient(135deg,#4c1d95,#5b21b6);border:1px solid #8b5cf6;color:#c4b5fd}
+.bpp:hover{box-shadow:0 0 18px rgba(139,92,246,.3)}
+/* Config strip */
+.cs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.cf{background:var(--s2);border:1px solid var(--bd);border-radius:7px;padding:8px 14px;font-family:'JetBrains Mono';font-size:.78rem}
+.cf span{color:var(--mt);margin-right:5px}
+/* Log */
+.lc{background:#020817;border:1px solid var(--bd);border-radius:8px;padding:12px;height:280px;overflow-y:auto;font-family:'JetBrains Mono';font-size:.72rem}
+.le{padding:3px 0;border-bottom:1px solid rgba(30,58,95,.3);display:flex;gap:8px}
+.lt{color:var(--mt);flex-shrink:0}
+.lm.info{color:#93c5fd}.lm.warn{color:var(--yw)}.lm.error{color:var(--rd)}.lm.success{color:var(--gn)}
+/* Objectives */
+.og{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.oc{background:var(--s2);border:1px solid var(--bd);border-radius:9px;padding:12px 14px;display:flex;gap:10px}
+.oc:hover{border-color:var(--ac)}
+.on{width:26px;height:26px;background:linear-gradient(135deg,var(--ac),var(--pp));border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0}
+.ot{font-size:.82rem;font-weight:600;margin-bottom:3px}
+.od{font-size:.7rem;color:var(--mt);line-height:1.4}
+.os2{font-size:.62rem;padding:2px 7px;border-radius:8px;color:var(--gn);border:1px solid rgba(0,230,118,.3);background:rgba(0,230,118,.1);display:inline-block;margin-top:5px}
+/* Arch */
+.af{display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap;padding:10px 0}
+.nd{background:var(--s2);border:1px solid var(--gn);border-radius:10px;padding:12px 16px;text-align:center;min-width:95px}
+.nd:hover{transform:scale(1.05);border-color:var(--ac)}
+.ni{font-size:1.5rem;margin-bottom:4px}
+.nl{font-size:.7rem;font-weight:600}.nb{font-size:.6rem;color:var(--mt)}
+.aw{padding:0 6px;color:var(--ac);font-size:1rem}
+.ng{display:flex;flex-direction:column;gap:8px}
+/* Rollout */
+.rb{background:var(--s2);border-radius:9px;padding:14px;border:1px solid var(--bd)}
+.pb{background:var(--bd);border-radius:3px;height:6px;overflow:hidden;margin-top:8px}
+.pf{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--gn),var(--ac));transition:width .5s}
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--s2);border:1px solid var(--ac);border-radius:9px;padding:12px 18px;font-size:.82rem;transform:translateY(80px);opacity:0;transition:.3s;z-index:999;max-width:300px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.error{border-color:var(--rd)}
+footer{text-align:center;padding:20px;color:var(--mt);font-size:.7rem;border-top:1px solid var(--bd);margin-top:24px}
+</style>
 </head>
 <body>
 <header>
-  <div class="logo">
-    <div class="logo-icon">⎈</div>
-    <div>
-      <div class="logo-text">W9 GitOps Dashboard</div>
-      <div class="logo-sub">Real-time Kubernetes Observability</div>
-    </div>
-  </div>
-  <div class="header-right">
-    <div class="live-badge"><div class="live-dot"></div> LIVE</div>
-    <button class="refresh-btn" onclick="loadAll()">⟳ Refresh</button>
-  </div>
+<div class="brand"><div class="brand-icon">⎈</div><div><h1>W9 GitOps Dashboard</h1><p>Kubernetes · ArgoCD · Prometheus · Argo Rollouts</p></div></div>
+<div class="hdr-r">
+<div class="tabs"><button class="tab active" onclick="showTab(0)">📊 Dashboard</button><button class="tab" onclick="showTab(1)">🎮 Demo</button></div>
+<div class="live"><div class="live-dot"></div>LIVE</div>
+</div>
 </header>
-
 <main>
-  <!-- Summary -->
-  <div class="summary-grid" id="summary">
-    <div class="summary-card blue"><div class="card-label">Pods Running</div><div class="card-value blue" id="s-pods">...</div><div class="card-icon">📦</div></div>
-    <div class="summary-card green"><div class="card-label">Apps Synced</div><div class="card-value green" id="s-apps">...</div><div class="card-icon">✅</div></div>
-    <div class="summary-card purple"><div class="card-label">Nodes</div><div class="card-value purple" id="s-nodes">...</div><div class="card-icon">🖥️</div></div>
-    <div class="summary-card yellow"><div class="card-label">Namespaces</div><div class="card-value yellow" id="s-ns">...</div><div class="card-icon">📁</div></div>
-  </div>
 
-  <!-- Architecture -->
-  <div class="arch-container">
-    <div class="section-title">⚙️ GitOps Architecture Flow</div>
-    <div class="arch-flow">
-      <div class="arch-node active">
-        <div class="arch-node-icon">👨‍💻</div>
-        <div class="arch-node-label">Developer</div>
-        <div class="arch-node-sub">Push code</div>
-      </div>
-      <div class="arch-arrow"><div class="arch-arrow-label">git push</div>→</div>
-      <div class="arch-node active">
-        <div class="arch-node-icon">🐙</div>
-        <div class="arch-node-label">GitHub</div>
-        <div class="arch-node-sub">XBrain_Week</div>
-      </div>
-      <div class="arch-arrow"><div class="arch-arrow-label">watches</div>→</div>
-      <div class="arch-node active">
-        <div class="arch-node-icon">🔄</div>
-        <div class="arch-node-label">ArgoCD</div>
-        <div class="arch-node-sub">GitOps Engine</div>
-      </div>
-      <div class="arch-arrow"><div class="arch-arrow-label">deploys</div>→</div>
-      <div class="arch-group">
-        <div class="arch-node active">
-          <div class="arch-node-icon">🚀</div>
-          <div class="arch-node-label">Argo Rollouts</div>
-          <div class="arch-node-sub">Canary Deploy</div>
-        </div>
-        <div class="arch-node active">
-          <div class="arch-node-icon">📊</div>
-          <div class="arch-node-label">Prometheus</div>
-          <div class="arch-node-sub">Monitoring</div>
-        </div>
-      </div>
-      <div class="arch-arrow"><div class="arch-arrow-label">alerts</div>→</div>
-      <div class="arch-node active">
-        <div class="arch-node-icon">📧</div>
-        <div class="arch-node-label">Alertmanager</div>
-        <div class="arch-node-sub">Email notify</div>
-      </div>
-    </div>
-  </div>
+<!-- ========== TAB 0: DASHBOARD ========== -->
+<div class="page active" id="page0">
+<div class="grid4" id="sum">
+<div class="sc b"><div class="sc-l">Pods Running</div><div class="sc-v b" id="sp">...</div><div class="sc-i">📦</div></div>
+<div class="sc g"><div class="sc-l">Apps Synced</div><div class="sc-v g" id="sa">...</div><div class="sc-i">✅</div></div>
+<div class="sc p"><div class="sc-l">Nodes</div><div class="sc-v p" id="sn">1</div><div class="sc-i">🖥️</div></div>
+<div class="sc y"><div class="sc-l">Namespaces</div><div class="sc-v y" id="sns">...</div><div class="sc-i">📁</div></div>
+</div>
+<div class="panel"><div class="sec">⚙️ GitOps Architecture</div>
+<div class="af">
+<div class="nd"><div class="ni">👨‍💻</div><div class="nl">Developer</div><div class="nb">git push</div></div>
+<div class="aw">→</div>
+<div class="nd"><div class="ni">🐙</div><div class="nl">GitHub</div><div class="nb">XBrain_Week</div></div>
+<div class="aw">→</div>
+<div class="nd"><div class="ni">🔄</div><div class="nl">ArgoCD</div><div class="nb">GitOps</div></div>
+<div class="aw">→</div>
+<div class="ng">
+<div class="nd"><div class="ni">🚀</div><div class="nl">Rollouts</div><div class="nb">Canary</div></div>
+<div class="nd"><div class="ni">📊</div><div class="nl">Prometheus</div><div class="nb">Monitor</div></div>
+</div>
+<div class="aw">→</div>
+<div class="nd"><div class="ni">📧</div><div class="nl">Alert</div><div class="nb">Email</div></div>
+</div></div>
+<div class="grid2">
+<div class="panel"><div class="sec">🔄 ArgoCD Apps</div><div id="al">...</div></div>
+<div class="panel"><div class="sec">🚀 Rollout Status</div><div id="rl" class="rb">...</div></div>
+</div>
+<div class="panel"><div class="sec">📦 All Pods</div><div id="pl">...</div></div>
+</div>
 
-  <!-- ArgoCD Apps + Rollouts -->
-  <div class="two-col">
-    <div class="panel">
-      <div class="panel-title"><span>🔄</span> ArgoCD Applications</div>
-      <div id="apps-list"><div class="empty"><span class="loading"></span></div></div>
-    </div>
-    <div class="panel">
-      <div class="panel-title"><span>🚀</span> Argo Rollouts Status</div>
-      <div id="rollouts-list"><div class="empty"><span class="loading"></span></div></div>
-    </div>
-  </div>
-
-  <!-- Pods table -->
-  <div class="panel" style="margin-bottom:28px">
-    <div class="panel-title"><span>📦</span> All Pods (trừ kube-system)</div>
-    <div id="pods-table"><div class="empty"><span class="loading"></span></div></div>
-  </div>
-
-  <!-- Nodes -->
-  <div class="panel" style="margin-bottom:28px">
-    <div class="panel-title"><span>🖥️</span> Cluster Nodes</div>
-    <div id="nodes-list" style="display:flex;gap:16px;flex-wrap:wrap"><div class="empty"><span class="loading"></span></div></div>
-  </div>
+<!-- ========== TAB 1: DEMO ========== -->
+<div class="page" id="page1">
+<div class="panel"><div class="sec">🎯 Mục Tiêu Đề Bài W9</div>
+<div class="og">
+<div class="oc"><div class="on">1</div><div><div class="ot">GitOps — ArgoCD</div><div class="od">App-of-Apps, tự đồng bộ từ Git</div><span class="os2">✅ Done</span></div></div>
+<div class="oc"><div class="on">2</div><div><div class="ot">Canary Deploy</div><div class="od">Argo Rollouts thả 25% → kiểm tra → 100%</div><span class="os2">✅ Done</span></div></div>
+<div class="oc"><div class="on">3</div><div><div class="ot">Auto Rollback</div><div class="od">Success Rate &lt;90% → tự ABORT</div><span class="os2">✅ Done</span></div></div>
+<div class="oc"><div class="on">4</div><div><div class="ot">SLO Alert → Email</div><div class="od">Error Rate &gt;5% → email cảnh báo</div><span class="os2">✅ Done</span></div></div>
+<div class="oc"><div class="on">5</div><div><div class="ot">CI/CD Validation</div><div class="od">GitHub Actions + Kubeconform</div><span class="os2">✅ Done</span></div></div>
+</div></div>
+<div class="panel"><div class="sec">🎮 Demo Controls</div>
+<div class="cs">
+<div class="cf"><span>VERSION:</span><strong id="cv" style="color:var(--gn)">...</strong></div>
+<div class="cf"><span>ERROR_RATE:</span><strong id="ce" style="color:var(--gn)">...</strong></div>
+<div class="cf"><span>Pods:</span><strong id="cp" style="color:var(--gn)">...</strong></div>
+</div>
+<div class="bg">
+<button class="db br" onclick="demo('inject-error')"><div class="di">💣</div><div class="dt">1. Inject Error (v2)</div><div class="dd">Push v2 lỗi 100% → Canary → Abort → Email</div></button>
+<button class="db bgn" onclick="demo('fix')"><div class="di">🛠️</div><div class="dt">2. Fix &amp; Restore</div><div class="dd">Khôi phục v1 khoẻ, ERROR_RATE=0</div></button>
+<button class="db bbl" onclick="window.open('https://localhost:8081')"><div class="di">🔄</div><div class="dt">3. Mở ArgoCD</div><div class="dd">Xem App-of-Apps trực tiếp</div></button>
+<button class="db bpp" onclick="demo('explain')"><div class="di">📖</div><div class="dt">4. Giải Thích Luồng</div><div class="dd">In từng bước GitOps vào log</div></button>
+</div></div>
+<div class="grid2">
+<div class="panel"><div class="sec">🔄 ArgoCD Apps (Live)</div><div id="al2">...</div></div>
+<div class="panel"><div class="sec">📋 Event Log</div><div class="lc" id="el"><div class="le"><span class="lt">--:--</span><span class="lm info">Chờ sự kiện...</span></div></div></div>
+</div>
+</div>
 </main>
-
-<footer>W9 GitOps Dashboard · trungctde180766 · Kubernetes v1.35.1 · ArgoCD v2.x · Prometheus · Argo Rollouts</footer>
+<footer>W9 GitOps · trungctde180766 · ArgoCD · Prometheus · Argo Rollouts</footer>
+<div class="toast" id="toast"></div>
 
 <script>
-const API = 'http://localhost:9999/api';
+const A='http://localhost:9999/api';
+const pages=document.querySelectorAll('.page'),tabs=document.querySelectorAll('.tab');
+function showTab(i){pages.forEach((p,j)=>{p.classList.toggle('active',j===i)});tabs.forEach((t,j)=>{t.classList.toggle('active',j===i)})}
+function toast(m,t=''){const e=document.getElementById('toast');e.textContent=m;e.className=`toast show ${t}`;setTimeout(()=>e.className='toast',3000)}
+function bc(v){v=(v||'').toLowerCase();if(v.includes('healthy'))return'h';if(v==='synced')return'sy';if(v.includes('out'))return'os';if(v.includes('degrad'))return'd';if(v.includes('progress'))return'pr';return'uk'}
+const ic=n=>n==='root-app'?'🌳':n.includes('prom')?'📊':n.includes('roll')?'🚀':n.includes('todo')?'📝':'⚙️';
 
-function badgeClass(val) {
-  val = (val || '').toLowerCase();
-  if (val.includes('healthy')) return 'healthy';
-  if (val.includes('synced') && !val.includes('out')) return 'synced';
-  if (val.includes('outofsync') || val.includes('out of sync')) return 'outofsync';
-  if (val.includes('degraded')) return 'degraded';
-  if (val.includes('progressing')) return 'progressing';
-  return 'unknown';
+async function loadAll(){
+try{
+const[sm,apps,pods,ro,cfg,ev]=await Promise.all([
+fetch(A+'/summary').then(r=>r.json()).catch(()=>({})),
+fetch(A+'/apps').then(r=>r.json()).catch(()=>[]),
+fetch(A+'/pods').then(r=>r.json()).catch(()=>[]),
+fetch(A+'/rollout').then(r=>r.json()).catch(()=>({})),
+fetch(A+'/current-config').then(r=>r.json()).catch(()=>({})),
+fetch(A+'/events').then(r=>r.json()).catch(()=>[]),
+]);
+// Summary
+if(sm.pods_total){document.getElementById('sp').textContent=`${sm.pods_running}/${sm.pods_total}`;document.getElementById('sa').textContent=`${sm.apps_synced}/${sm.apps_total}`;document.getElementById('cp').textContent=`${sm.pods_running}/${sm.pods_total}`}
+document.getElementById('sns').textContent=apps.length||'?';
+// Config
+if(cfg.version){const cv=document.getElementById('cv');cv.textContent=cfg.version;cv.style.color=cfg.version==='v2'?'var(--rd)':'var(--gn)';const ce=document.getElementById('ce');ce.textContent=cfg.error_rate;ce.style.color=parseFloat(cfg.error_rate)>0?'var(--rd)':'var(--gn)'}
+// Apps
+const ah=apps.map(a=>`<div class="ar"><span style="font-size:1.1rem">${ic(a.name)}</span><span class="an">${a.name}</span><span class="bd ${bc(a.health)}">${a.health}</span><span class="bd ${bc(a.sync)}">${a.sync}</span></div>`).join('')||'<span style="color:var(--mt);font-size:.8rem">No apps</span>';
+document.getElementById('al').innerHTML=ah;
+document.getElementById('al2').innerHTML=ah;
+// Rollout
+if(ro.phase){const pct=ro.desired>0?Math.round(ro.ready/ro.desired*100):0;const c=ro.phase==='Healthy'?'var(--gn)':ro.phase==='Degraded'?'var(--rd)':'var(--yw)';
+document.getElementById('rl').innerHTML=`<div style="font-size:1rem;font-weight:700;color:${c};margin-bottom:8px">${ro.phase==='Healthy'?'💚':ro.phase==='Degraded'?'🔴':'🟡'} ${ro.phase}</div><div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--mt)"><span>Ready: ${ro.ready}/${ro.desired}</span><span>${pct}%</span></div><div class="pb"><div class="pf" style="width:${pct}%"></div></div>`}
+// Pods
+if(pods.length){document.getElementById('pl').innerHTML=`<table class="pt"><thead><tr><th>NS</th><th>Pod</th><th>Status</th><th>Ready</th><th>Restarts</th></tr></thead><tbody>${pods.map(p=>`<tr><td><span class="ns">${p.namespace}</span></td><td><span class="pn">${p.name}</span></td><td><span class="sd ${p.phase==='Running'?'r':p.phase==='Pending'?'pe':'f'}">${p.phase}</span></td><td style="font-family:'JetBrains Mono';font-size:.73rem">${p.ready}</td><td style="font-family:'JetBrains Mono';font-size:.73rem;color:${p.restarts>0?'var(--yw)':'var(--mt)'}">${p.restarts}</td></tr>`).join('')}</tbody></table>`}
+// Events
+if(ev.length){document.getElementById('el').innerHTML=ev.map(e=>`<div class="le"><span class="lt">${e.time}</span><span class="lm ${e.level}">${e.msg}</span></div>`).join('')}
+}catch(e){console.error(e)}
 }
 
-function statusDotClass(phase) {
-  if (phase === 'Running') return 'running';
-  if (phase === 'Pending') return 'pending';
-  return 'failed';
-}
-
-async function loadSummary() {
-  try {
-    const r = await fetch(`${API}/summary`);
-    const d = await r.json();
-    document.getElementById('s-pods').textContent = `${d.pods_running}/${d.pods_total}`;
-    document.getElementById('s-apps').textContent = `${d.apps_synced}/${d.apps_total}`;
-    document.getElementById('s-nodes').textContent = d.nodes;
-  } catch { document.getElementById('s-pods').textContent = 'ERR'; }
-}
-
-async function loadApps() {
-  const el = document.getElementById('apps-list');
-  try {
-    const r = await fetch(`${API}/apps`);
-    const apps = await r.json();
-    const nsSet = new Set(apps.map(a => a.name));
-    document.getElementById('s-ns').textContent = nsSet.size;
-    if (!apps.length) { el.innerHTML = '<div class="empty">Không có app nào</div>'; return; }
-    el.innerHTML = apps.map(a => `
-      <div class="app-card">
-        <div style="font-size:1.4rem">${a.name === 'root-app' ? '🌳' : a.name.includes('prometheus') ? '📊' : a.name.includes('rollout') ? '🚀' : a.name.includes('todo') ? '📝' : '⚙️'}</div>
-        <div style="flex:1">
-          <div class="app-name">${a.name}</div>
-          <div class="app-sub">${a.repo.replace('https://','').substring(0,45)}...</div>
-        </div>
-        <span class="badge ${badgeClass(a.health)}">${a.health}</span>
-        <span class="badge ${badgeClass(a.sync)}">${a.sync}</span>
-      </div>`).join('');
-  } catch { el.innerHTML = '<div class="empty">❌ Không kết nối được Dashboard API<br><small>Chạy: python cloud/w9/dashboard/server.py</small></div>'; }
-}
-
-async function loadRollouts() {
-  const el = document.getElementById('rollouts-list');
-  try {
-    const r = await fetch(`${API}/rollouts`);
-    const rollouts = await r.json();
-    if (!rollouts.length) { el.innerHTML = '<div class="empty">Không có rollout nào</div>'; return; }
-    el.innerHTML = rollouts.map(ro => {
-      const pct = ro.desired > 0 ? Math.round((ro.ready / ro.desired) * 100) : 0;
-      const phaseColor = ro.phase === 'Healthy' ? '#00e676' : ro.phase === 'Degraded' ? '#ff5252' : '#ffd740';
-      return `<div class="rollout-item">
-        <div class="rollout-top">
-          <span class="rollout-name">${ro.name}</span>
-          <span class="badge ${badgeClass(ro.phase)}">${ro.phase}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:.75rem;color:#64748b;margin-bottom:6px">
-          <span>Ready: ${ro.ready}/${ro.desired}</span><span>${pct}%</span>
-        </div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-      </div>`;
-    }).join('');
-  } catch { el.innerHTML = '<div class="empty">Không có dữ liệu</div>'; }
-}
-
-async function loadPods() {
-  const el = document.getElementById('pods-table');
-  try {
-    const r = await fetch(`${API}/pods`);
-    const pods = await r.json();
-    if (!pods.length) { el.innerHTML = '<div class="empty">Không có pod nào</div>'; return; }
-    el.innerHTML = `<table class="pod-table">
-      <thead><tr><th>Namespace</th><th>Pod Name</th><th>Status</th><th>Ready</th><th>Restarts</th></tr></thead>
-      <tbody>${pods.map(p => `
-        <tr>
-          <td><span class="ns-badge">${p.namespace}</span></td>
-          <td><span class="pod-name">${p.name}</span></td>
-          <td><span class="status-dot ${statusDotClass(p.phase)}">${p.phase}</span></td>
-          <td style="font-family:'JetBrains Mono';font-size:.78rem">${p.ready}</td>
-          <td style="color:${p.restarts > 0 ? '#ffd740' : '#64748b'};font-family:'JetBrains Mono';font-size:.78rem">${p.restarts}</td>
-        </tr>`).join('')}
-      </tbody></table>`;
-  } catch { el.innerHTML = '<div class="empty">Không có dữ liệu</div>'; }
-}
-
-async function loadNodes() {
-  const el = document.getElementById('nodes-list');
-  try {
-    const r = await fetch(`${API}/nodes`);
-    const nodes = await r.json();
-    if (!nodes.length) { el.innerHTML = '<div class="empty">Không có node nào</div>'; return; }
-    el.innerHTML = nodes.map(n => `
-      <div class="node-card" style="min-width:200px">
-        <div style="font-size:1.8rem;margin-bottom:6px">🖥️</div>
-        <div class="node-name">${n.name}</div>
-        <span class="badge healthy">${n.status}</span>
-        <div class="node-stat"><span>CPU</span><span style="color:#e2e8f0">${n.cpu} cores</span></div>
-        <div class="node-stat"><span>Memory</span><span style="color:#e2e8f0">${Math.round(parseInt(n.memory)/1024/1024)}Gi</span></div>
-      </div>`).join('');
-  } catch { el.innerHTML = '<div class="empty">Không có dữ liệu</div>'; }
-}
-
-function loadAll() {
-  loadSummary();
-  loadApps();
-  loadRollouts();
-  loadPods();
-  loadNodes();
+async function demo(action){
+const m={'inject-error':'💣 Injecting error...','fix':'🛠️ Restoring...','explain':'📖 Explaining...'};
+toast(m[action]||'...',action==='inject-error'?'error':'');
+try{await fetch(`${A}/demo/${action}`,{method:'POST'})}catch{toast('❌ API không kết nối','error')}
+setTimeout(loadAll,1000);
 }
 
 loadAll();
-setInterval(loadAll, 10000); // auto-refresh mỗi 10 giây
+setInterval(loadAll,5000);
 </script>
 </body>
 </html>
