@@ -125,3 +125,9 @@ Cấu hình định tuyến và gửi email cảnh báo về hòm thư cá nhân
 
 ### 2. Giao diện Prometheus Targets hoạt động tốt (Up)
 ![Prometheus Targets](../../assets/prometheus_targets.png)
+
+### 3. Quá trình Canary tự động hủy (Abort/Rollback) trên ArgoCD
+![Canary Rollback](../../assets/canary_rollback.png)
+
+### 4. Giao diện Prometheus hiển thị biểu thức đánh giá
+![Prometheus Query](../../assets/promt.png)
