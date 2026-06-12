@@ -135,7 +135,43 @@ Tài liệu này tổng hợp các câu hỏi tiềm năng từ Mentor khi bảo
 * **Trả lời:**
   Em chạy một Pod giả lập traffic tên là **`traffic-generator`** trong namespace `demo`. Pod này chạy một vòng lặp vô hạn sử dụng lệnh `wget` liên tục gửi các HTTP request lên Service `api` với tần suất khoảng 10-20 request mỗi giây, đảm bảo luôn có dữ liệu real-time chạy trong cụm.
 
-### ❓ Câu 18: Sự khác biệt giữa Service type `ClusterIP` và `LoadBalancer` là gì? Service của API đang dùng loại nào?
+### ❓ Câu 18: Sự kết hợp giữa Service type `ClusterIP` và `LoadBalancer` là gì? Service của API đang dùng loại nào?
 * **Trả lời:**
   * **`ClusterIP`** (loại mặc định, Service `api` đang dùng): Chỉ cấp một IP nội bộ bên trong cụm K8s. Các dịch vụ bên ngoài cụm không thể kết nối trực tiếp đến IP này.
   * **`LoadBalancer`**: Tự động tích hợp và cấp một IP công cộng bên ngoài (External IP) thông qua đám mây (AWS, GCP) hoặc bộ định tuyến ảo (Metallb) để người dùng từ Internet truy cập trực tiếp vào ứng dụng.
+
+---
+
+## PHẦN 6: DÒ BÀI DÒNG CODE CHI TIẾT (LINE-BY-LINE DEFENSE)
+
+### ❓ Câu 19: Trong `servicemonitor.yaml`, dòng `release: kube-prometheus-stack` ở mục labels dùng để làm gì?
+* **Trả lời:**
+  * Dòng này đính kèm nhãn (label) định danh của bộ Helm release Prometheus Stack. Prometheus Operator được cấu hình để chỉ quét và tự động nạp cấu hình cào metric từ các `ServiceMonitor` nào có nhãn `release` khớp với tên Helm release đang chạy. Nếu xóa hoặc sửa dòng này thành tên khác, Prometheus Server sẽ bỏ qua file này và không cào metrics của Flask API.
+
+### ❓ Câu 20: Trong `api.yaml`, dòng `startingStep: 1` dùng để làm gì?
+* **Trả lời:**
+  * Dòng này cấu hình thời điểm bắt đầu chạy `AnalysisRun` (phân tích ngầm). Số `1` đại diện cho index của bước trong mảng `steps` (bước 1 là index 0: `setWeight: 25`, bước 2 là index 1: `pause: 30s`). `startingStep: 1` nghĩa là hệ thống sẽ đợi cho đến khi bước đầu tiên (25% traffic) được áp dụng xong rồi mới kích hoạt chạy phân tích lỗi ở nền, tránh việc đo đạc khi chưa có lưu lượng nào đổ vào bản mới.
+
+### ❓ Câu 21: Trong `analysis-template.yaml`, dòng `failureLimit: 1` dùng để làm gì?
+* **Trả lời:**
+  * Dòng này đặt số lần thất bại tối đa cho phép của đợt phân tích. Với giá trị là `1`, chỉ cần Prometheus trả về kết quả kiểm tra Success Rate nhỏ hơn 90% đúng **1 lần duy nhất**, đợt deploy sẽ bị coi là lỗi, Argo Rollouts lập tức dừng deploy (abort) và rollback về bản cũ để bảo vệ người dùng.
+
+### ❓ Câu 22: Trong `slo-alert.yaml`, dòng `for: 1m` dùng để làm gì?
+* **Trả lời:**
+  * Dòng này chỉ định thời gian trì hoãn trước khi phát cảnh báo chính thức (`Firing`). Tỉ lệ lỗi phải vượt quá 5% liên tục trong vòng 1 phút thì Prometheus mới phát alert khẩn cấp. Dòng này giúp lọc bớt các báo động giả khi hệ thống chỉ bị nghẽn mạng hoặc lỗi tạm thời trong vài giây.
+
+### ❓ Câu 23: Trong `alertmanager-config.yaml`, dòng `groupBy: ['alertname']` dùng để làm gì?
+* **Trả lời:**
+  * Dòng này gom nhóm các cảnh báo theo tên cảnh báo. Nếu hệ thống đồng loạt phát sinh nhiều alert cùng tên (ví dụ nhiều Pod cùng báo `HighErrorRateAPI` cùng lúc), Alertmanager sẽ gom tất cả chúng lại để gửi đi trong một email duy nhất thay vì spam hộp thư của người dùng bằng hàng chục email riêng lẻ.
+
+### ❓ Câu 24: Trong `api.yaml`, dòng `imagePullPolicy: IfNotPresent` dùng để làm gì?
+* **Trả lời:**
+  * Dòng này quy định chính sách tải image của container. K8s sẽ ưu tiên sử dụng bản image có sẵn ở bộ nhớ node local trước; nếu không tìm thấy mới tải từ registry về. Dòng này giúp tối ưu hóa thời gian deploy và tránh quá tải mạng khi chạy local trên Minikube.
+
+### ❓ Câu 25: Trong `slo-alert.yaml`, dòng `status=~"5.*"` dùng để làm gì?
+* **Trả lời:**
+  * Đây là cú pháp sử dụng biểu thức chính quy (regular expression) trong PromQL. Dấu `=~` là so khớp regex, `"5.*"` đại diện cho tất cả các HTTP status code bắt đầu bằng số 5 (như 500, 502, 503, 504), giúp Prometheus lọc ra chính xác các lỗi phát sinh từ phía server.
+
+### ❓ Câu 26: Trong `alertmanager-config.yaml`, dòng `smarthost: 'smtp.gmail.com:587'` dùng để làm gì?
+* **Trả lời:**
+  * Dòng này chỉ định địa chỉ máy chủ SMTP và cổng kết nối của Google Gmail. Cổng `587` là cổng chuẩn sử dụng giao thức bảo mật STARTTLS để mã hóa đường truyền thư trước khi gửi, đảm bảo thông tin đăng nhập tài khoản và nội dung email được truyền đi an toàn.
